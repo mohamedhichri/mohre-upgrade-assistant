@@ -1,0 +1,13 @@
+DSS_VERSION=15.0.0
+DATA_DIR=/data/data_dir
+
+sudo su dataiku_user
+
+cd /data
+
+tar xzf dataiku-dss-${DSS_VERSION}.tar.gz
+
+dataiku-dss-${DSS_VERSION}/installer.sh -d ${DATA_DIR} -u
+
+# might fail and ask to run the below command : 
+# sudo -i "/home/dataiku/dataiku-dss-${DSS_VERSION}/scripts/install/install-deps.sh"
