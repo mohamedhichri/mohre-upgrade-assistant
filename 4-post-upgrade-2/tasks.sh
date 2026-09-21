@@ -1,5 +1,5 @@
 DATA_DIR = /data/data_dir
-DSS_VERSION=15.0.0
+DSS_VERSION=15.0.1
 
 # Start DSS
 ${DATA_DIR}/bin/dss start

@@ -1,4 +1,4 @@
-DSS_VERSION=15.0.0
+DSS_VERSION=15.0.1
 DATA_DIR=/data/data_dir
 
 sudo su dataiku_user

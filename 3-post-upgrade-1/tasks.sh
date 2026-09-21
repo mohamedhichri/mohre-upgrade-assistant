@@ -1,6 +1,6 @@
 # Post-upgrade tasks (before startup)
 DATA_DIR = /data/data_dir
-DSS_VERSION=15.0.0
+DSS_VERSION=15.0.1
 
 ## Update R installation
 ${DATA_DIR}/bin/dssadmin install-R-integration

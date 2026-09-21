@@ -1,5 +1,5 @@
 # download the new version of DSS and the required libraries
-DSS_VERSION=15.0.0
+DSS_VERSION=15.0.1
 sudo su dataiku_user
 
 cd /data
