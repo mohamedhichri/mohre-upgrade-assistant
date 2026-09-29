@@ -1,0 +1,8 @@
+DSS node,OS,CPU,RAM (GB),Disk (/data),/data usage,Runtime database,DSS version,enough disk space for backup ?,data_dir size,UIF,Hadoop integration,Spark integration,R integration,graphics export,cgroup (v2),code envs,code studio templates
+design (prd),RHEL 9.5,20,503,750 GB,90%,Postgresql (localhost),14.2.2,no,312 GB,enabled,yes,yes,yes,yes,yes,yes,yes
+deployer,RHEL 9.7,4,15,750 GB,15%,local H2,14.2.2,yes,16 GB,enabled,yes,yes,yes,no,yes,no,no
+automation (test),RHEL 9.5,20,62,750 GB,15%,Postgresql (localhost),14.2.2,yes,4.7 GB,enabled,yes,yes,yes,yes,yes,no,no
+automation (prd),RHEL 9.5,20,62,750 GB,12%,Postgresql (localhost),14.2.2,yes,10.5 GB,enabled,yes,yes,yes,yes,yes,no,no
+govern,RHEL 9.7,16,31,1000 GB,1%,Postgresql (localhost),14.2.2,yes,100 MB,NA,NA,NA,NA,NA,NA,NA,NA
+design (sit),RHEL 9.5,4,15,100 GB,57%,Postgresql (localhost),14.2.2,yes,24 GB,enabled,yes,yes,yes,no,yes,yes,yes
+automation (sit),RHEL 9.5,4,15,100 GB,36%,Postgresql (localhost),14.2.2,yes,4 GB,enabled,yes,yes,yes,no,yes,no,no
