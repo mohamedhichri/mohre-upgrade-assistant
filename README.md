@@ -17,7 +17,7 @@ The repository is split into four phases:
 ## Assumptions
 
 - The DSS data directory is `/data/data_dir`.
-- The DSS service account is `dataiku_user`.
+- The DSS service account is `dss`.
 - The PostgreSQL service is managed by the `postgres` operating-system user.
 - The host has network access to `downloads.dataiku.com` and enough free disk
 	space for the release archives and backups.
@@ -36,28 +36,28 @@ window.
 3. Record the current DSS configuration and verify that the PostgreSQL backup
 	 destination has sufficient space.
 4. Ensure that `wget`, `tar`, `sudo`, and PostgreSQL client tools are installed.
-5. Run the commands below with an account that can become `dataiku_user` and
+5. Run the commands below with an account that can become `dss` and
 	 `postgres` and can use `sudo`.
 
 ## Upgrade procedure
 
 ### 1. Download release artifacts and back up DSS
 
-Run as an administrator, switching to `dataiku_user` for DSS-owned files:
+Run as an administrator, switching to `dss` for DSS-owned files:
 
 ```bash
 export DSS_VERSION=15.0.1
 export DATA_DIR=/data/data_dir
 export BACKUP_DIR=/data/data_dir_backup_$(date +%F)
 
-sudo -iu dataiku_user
+sudo -iu dss
 cd /data
 wget "https://downloads.dataiku.com/public/studio/${DSS_VERSION}/dataiku-dss-${DSS_VERSION}.tar.gz"
 wget "https://downloads.dataiku.com/public/studio/${DSS_VERSION}/dataiku-dss-hadoop-standalone-libs-generic-hadoop3-${DSS_VERSION}.tar.gz"
 wget "https://downloads.dataiku.com/public/studio/${DSS_VERSION}/dataiku-dss-spark-standalone-${DSS_VERSION}-4.1.2-generic-hadoop3.tar.gz"
 exit
 
-sudo -iu dataiku_user /data/data_dir/bin/dss stop
+sudo -iu dss /data/data_dir/bin/dss stop
 sudo cp -a /data/data_dir "${BACKUP_DIR}"
 sudo -iu postgres pg_dumpall > "/data/postgresql-dump-$(date +%F).sql"
 ```
@@ -72,8 +72,8 @@ accepted.
 export DSS_VERSION=15.0.1
 export DATA_DIR=/data/data_dir
 
-sudo -iu dataiku_user tar xzf "/data/dataiku-dss-${DSS_VERSION}.tar.gz" -C /data
-sudo -iu dataiku_user \
+sudo -iu dss tar xzf "/data/dataiku-dss-${DSS_VERSION}.tar.gz" -C /data
+sudo -iu dss \
 	"/data/dataiku-dss-${DSS_VERSION}/installer.sh" -d "${DATA_DIR}" -u
 ```
 
@@ -95,26 +95,26 @@ Run after installation, before starting DSS:
 export DATA_DIR=/data/data_dir
 export DSS_VERSION=15.0.1
 
-sudo -iu dataiku_user "${DATA_DIR}/bin/dssadmin" install-R-integration
-sudo -iu dataiku_user "${DATA_DIR}/bin/dssadmin" install-graphics-export
-sudo -iu dataiku_user "${DATA_DIR}/bin/dssadmin" install-hadoop-integration \
+sudo -iu dss "${DATA_DIR}/bin/dssadmin" install-R-integration
+sudo -iu dss "${DATA_DIR}/bin/dssadmin" install-graphics-export
+sudo -iu dss "${DATA_DIR}/bin/dssadmin" install-hadoop-integration \
 	-standalone generic-hadoop3 \
 	-standaloneArchive "/data/dataiku-dss-hadoop-standalone-libs-generic-hadoop3-${DSS_VERSION}.tar.gz"
-sudo -iu dataiku_user "${DATA_DIR}/bin/dssadmin" install-spark-integration \
+sudo -iu dss "${DATA_DIR}/bin/dssadmin" install-spark-integration \
 	-standaloneArchive "/data/dataiku-dss-spark-standalone-${DSS_VERSION}-4.1.2-generic-hadoop3.tar.gz" \
 	-forK8S
 
 for image_type in container-exec spark cde api-deployer; do
-	sudo -iu dataiku_user "${DATA_DIR}/bin/dssadmin" build-base-image --type "${image_type}"
+	sudo -iu dss "${DATA_DIR}/bin/dssadmin" build-base-image --type "${image_type}"
 done
 ```
 
 ### 4. Start DSS and rebuild runtime artifacts
 
 ```bash
-sudo -iu dataiku_user /data/data_dir/bin/dss start
-sudo -iu dataiku_user /data/data_dir/bin/dssadmin build-container-exec-code-env-images --all
-sudo -iu dataiku_user /data/data_dir/bin/dsscli code-studio-templates-build
+sudo -iu dss /data/data_dir/bin/dss start
+sudo -iu dss /data/data_dir/bin/dssadmin build-container-exec-code-env-images --all
+sudo -iu dss /data/data_dir/bin/dsscli code-studio-templates-build
 ```
 
 Then validate the DSS URL, projects, connections, scenarios, code
@@ -139,7 +139,8 @@ rollback procedure.
 
 The `tasks.sh` files are reference snippets rather than fully unattended
 scripts. Run them phase by phase and verify each command. In particular, shell
-assignments must use `NAME=value` (without spaces), and `sudo su dataiku_user`
+assignments must use `NAME=value` (without spaces), and `sudo su dss`
 opens a subshell; it does not change the user of subsequent commands in the
 parent shell. The commands in this README use explicit `sudo -iu` invocation to
 make the execution user clear.
+# mohre-upgrade-assistant
