@@ -13,14 +13,14 @@ wget https://downloads.dataiku.com/public/studio/{DSS_VERSION}/dataiku-dss-spark
 # stop dataiku
 sudo su dss
 
-cd /data/data_dir
+cd /data/dataiku/dss_data
 
 ./bin/dss stop
 
 # backup data directory and runtime db
-cd /data/data_dir
+cd /data/dataiku/dss_data
 
-cp -r /data/data_dir /data/data_dir_backup_$(date +%F)
+cp -r /data/dataiku/dss_data /data/dataiku/dss_data_backup_$(date +%F)
 
 # optional : backup runtime db
 sudo su

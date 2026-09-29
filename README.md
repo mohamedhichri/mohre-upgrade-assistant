@@ -10,18 +10,31 @@ The repository is split into four phases:
 2. [`2-upgrade/tasks.sh`](2-upgrade/tasks.sh): install DSS `15.0.2` into the
 	 existing data directory.
 3. [`3-post-upgrade-1/tasks.sh`](3-post-upgrade-1/tasks.sh): reinstall R,
-	 graphics export, Hadoop/Spark integrations, and rebuild base images.
+	 graphics export, Hadoop/Spark integrations, reinstall User Isolation (UIF),
+	 and rebuild the container base images (including MOHRE-specific images
+	 pushed to the Harbor registry).
 4. [`4-post-upgrade-2/tasks.sh`](4-post-upgrade-2/tasks.sh): start DSS, rebuild
 	 code environment images and Code Studios, and hand off model retraining.
 
 ## Assumptions
 
-- The DSS data directory is `/data/data_dir`.
+- The DSS data directory is `/data/dataiku/dss_data`.
 - The DSS service account is `dss`.
 - The PostgreSQL service is managed by the `postgres` operating-system user.
 - The host has network access to `downloads.dataiku.com` and enough free disk
 	space for the release archives and backups.
 - The Hadoop/Spark setup uses generic Hadoop 3 and Spark `4.1.2`.
+- User Isolation (UIF) is enabled, with `dss` as the DSS service account.
+- Container images are pushed to the Harbor registry
+	`harbor.mohre.gov.ae/lmis_dataiku`, and the host running DSS design (prod)
+	is logged in to it.
+- The following base-image build inputs exist on the DSS host:
+	- `/home/dss/oracle-instantclient-basic-23.8.0.25.04-1.el9.x86_64.rpm`
+	- `/home/dss/geos-devel-3.13.1-1.el9.x86_64.rpm`
+	- `/home/dss/docker-pretend.txt`, `/home/dss/docker-pretend.txt.1` and
+		`/home/dss/docker-pretend.txt.sql_server_issue` (Dockerfile fragments
+		prepended to the image builds)
+	- `/etc/crypto-policies/back-ends/java.config`
 
 Confirm these assumptions with the platform administrator before starting. The
 upgrade is disruptive and should be performed during an approved maintenance
@@ -47,8 +60,8 @@ Run as an administrator, switching to `dss` for DSS-owned files:
 
 ```bash
 export DSS_VERSION=15.0.2
-export DATA_DIR=/data/data_dir
-export BACKUP_DIR=/data/data_dir_backup_$(date +%F)
+export DATA_DIR=/data/dataiku/dss_data
+export BACKUP_DIR=/data/dataiku/dss_data_backup_$(date +%F)
 
 sudo -iu dss
 cd /data
@@ -57,8 +70,8 @@ wget "https://downloads.dataiku.com/public/studio/${DSS_VERSION}/dataiku-dss-had
 wget "https://downloads.dataiku.com/public/studio/${DSS_VERSION}/dataiku-dss-spark-standalone-${DSS_VERSION}-4.1.2-generic-hadoop3.tar.gz"
 exit
 
-sudo -iu dss /data/data_dir/bin/dss stop
-sudo cp -a /data/data_dir "${BACKUP_DIR}"
+sudo -iu dss /data/dataiku/dss_data/bin/dss stop
+sudo cp -a /data/dataiku/dss_data "${BACKUP_DIR}"
 sudo -iu postgres pg_dumpall > "/data/postgresql-dump-$(date +%F).sql"
 ```
 
@@ -70,7 +83,7 @@ accepted.
 
 ```bash
 export DSS_VERSION=15.0.2
-export DATA_DIR=/data/data_dir
+export DATA_DIR=/data/dataiku/dss_data
 
 sudo -iu dss tar xzf "/data/dataiku-dss-${DSS_VERSION}.tar.gz" -C /data
 sudo -iu dss \
@@ -87,40 +100,102 @@ sudo -i "/home/dataiku/dataiku-dss-${DSS_VERSION}/scripts/install/install-deps.s
 
 Do not continue until the installer completes successfully.
 
-### 3. Reinstall integrations and rebuild base images
+### 3. Reinstall integrations, UIF, and rebuild base images
 
 Run after installation, before starting DSS:
 
 ```bash
-export DATA_DIR=/data/data_dir
+export DATA_DIR=/data/dataiku/dss_data
 export DSS_VERSION=15.0.2
 
 sudo -iu dss "${DATA_DIR}/bin/dssadmin" install-R-integration
 sudo -iu dss "${DATA_DIR}/bin/dssadmin" install-graphics-export
 sudo -iu dss "${DATA_DIR}/bin/dssadmin" install-hadoop-integration \
-	-standalone generic-hadoop3 \
 	-standaloneArchive "/data/dataiku-dss-hadoop-standalone-libs-generic-hadoop3-${DSS_VERSION}.tar.gz"
 sudo -iu dss "${DATA_DIR}/bin/dssadmin" install-spark-integration \
 	-standaloneArchive "/data/dataiku-dss-spark-standalone-${DSS_VERSION}-4.1.2-generic-hadoop3.tar.gz" \
 	-forK8S
+```
 
+#### Reinstall User Isolation (UIF)
+
+Run as root:
+
+```bash
+sudo -i "${DATA_DIR}/bin/dssadmin" install-impersonation dss
+```
+
+Then check the security configuration in
+`/etc/dataiku-security/<INSTALL_ID>/security-config.ini`.
+
+#### Rebuild base images (DSS design prod)
+
+Run as `dss` from the data directory. Build the standard base images without R:
+
+```bash
+sudo -iu dss
+cd /data/dataiku/dss_data
+for image_type in container-exec spark api-deployer cde; do
+	./bin/dssadmin build-base-image --type "${image_type}" --without-r
+done
+
+# Container execution image with additional Python versions
+./bin/dssadmin build-base-image --type container-exec --without-r \
+	--with-py310 --with-py311 --with-py312
+```
+
+Build the MOHRE-specific images. The API Deployer image embeds the Oracle
+Instant Client and is pushed to Harbor:
+
+```bash
+./bin/dssadmin build-base-image --type api-deployer --without-r --with-py311 \
+	--copy-to-buildenv /home/dss/oracle-instantclient-basic-23.8.0.25.04-1.el9.x86_64.rpm oracle-instantclient-basic-23.8.0.25.04-1.el9.x86_64.rpm \
+	--dockerfile-prepend /home/dss/docker-pretend.txt \
+	--target-registry harbor.mohre.gov.ae/lmis_dataiku
+```
+
+The container execution image embeds GEOS and the host Java crypto policy
+(`java.config`, required to fix SQL Server connectivity), and is built and
+pushed to Harbor:
+
+```bash
+./bin/dssadmin build-base-image --type container-exec --without-r --with-py311 \
+	--copy-to-buildenv /home/dss/geos-devel-3.13.1-1.el9.x86_64.rpm geos-devel-3.13.1-1.el9.x86_64.rpm \
+	--dockerfile-prepend /home/dss/docker-pretend.txt.1
+
+./bin/dssadmin build-base-image --type container-exec --mode build-push \
+	--target-registry harbor.mohre.gov.ae/lmis_dataiku --without-r --with-py311 \
+	--copy-to-buildenv /etc/crypto-policies/back-ends/java.config java.config \
+	--dockerfile-prepend /home/dss/docker-pretend.txt.sql_server_issue
+```
+
+Alternatively, to use the Dataiku-provided prebuilt base images instead of
+building them locally, use `--mode use`:
+
+```bash
 for image_type in container-exec spark cde api-deployer; do
-	sudo -iu dss "${DATA_DIR}/bin/dssadmin" build-base-image --type "${image_type}"
+	./bin/dssadmin build-base-image --type "${image_type}" --mode use
 done
 ```
+
+[`3-post-upgrade-1/tasks.sh`](3-post-upgrade-1/tasks.sh) lists every variant
+that was run, including intermediate builds. Confirm with the platform
+administrator which image variants are required before running them.
 
 ### 4. Start DSS and rebuild runtime artifacts
 
 ```bash
-sudo -iu dss /data/data_dir/bin/dss start
-sudo -iu dss /data/data_dir/bin/dssadmin build-container-exec-code-env-images --all
-sudo -iu dss /data/data_dir/bin/dsscli code-studio-templates-build
+export DATA_DIR=/data/dataiku/dss_data
+
+sudo -iu dss "${DATA_DIR}/bin/dss" start
+sudo -iu dss "${DATA_DIR}/bin/dssadmin" build-container-exec-code-env-images --all
+sudo -iu dss "${DATA_DIR}/bin/dsscli" code-studio-templates-build
 ```
 
-Then validate the DSS URL, projects, connections, scenarios, code
-environments, containerized execution, Spark, API Deployer, and any Kubernetes
-deployments. Data scientists must retrain and validate machine-learning models
-as required by the upgrade process.
+Then validate the DSS URL, projects, connections (including Oracle and SQL
+Server), user isolation, scenarios, code environments, containerized execution,
+Spark, API Deployer, and any Kubernetes deployments. Data scientists must
+retrain and validate machine-learning models as required by the upgrade process.
 
 In **Administration > Settings > Containerized execution > Container image
 build**, verify whether **Enable automatic rebuild** should be enabled for this
@@ -128,7 +203,7 @@ environment.
 
 ## Rollback and recovery
 
-Do not delete `/data/data_dir_backup_<date>` or the PostgreSQL dump until the
+Do not delete `/data/dataiku/dss_data_backup_<date>` or the PostgreSQL dump until the
 validation period is complete. If the upgrade must be rolled back, stop DSS,
 follow the organization's tested DSS rollback procedure using the data
 directory backup and PostgreSQL dump, and involve the platform/database

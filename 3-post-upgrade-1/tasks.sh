@@ -1,5 +1,5 @@
 # Post-upgrade tasks (before startup)
-DATA_DIR=/data/data_dir
+DATA_DIR=/data/dataiku/dss_data
 DSS_VERSION=15.0.2
 
 ## Update R installation
@@ -13,20 +13,31 @@ ${DATA_DIR}/bin/dssadmin install-hadoop-integration -standaloneArchive /data/dat
 
 ${DATA_DIR}/bin/dssadmin install-spark-integration -standaloneArchive /data/dataiku-dss-spark-standalone-${DSS_VERSION}-4.1.2-generic-hadoop3.tar.gz -forK8S
 
+## UIF (as root)
+sudo su -
+./bin/dssadmin install-impersonation dss
+#check config /etc/dataiku-security/INSTALL_ID/security-config.ini
+
 ## Rebuild base images
+## on DSS design prod
 cd ${DATA_DIR}
-# built image locally and then transfered to customer 
-# ./bin/dssadmin build-base-image --type container-exec --without-r --with-py36 --with-py39 --with-py311  --with-py312   --with-py313  --without-cuda
-# docker save dku-apideployer-apinode-base:dss-15.0.2 | gzip > dku-apideployer-apinode-base-15.0.2.tar.gz
+/data/dataiku/dss_data/bin/dssadmin build-base-image --type container-exec --without-r
+/data/dataiku/dss_data/bin/dssadmin build-base-image --type spark --without-r
+/data/dataiku/dss_data/bin/dssadmin build-base-image --type api-deployer --without-r
+/data/dataiku/dss_data/bin/dssadmin build-base-image --type cde --without-r
 
-# TMPDIR=/mnt/data/tmp docker load -i /path/to/dku-apideployer-apinode-base-15.0.2.tar.gz
-/data/data_dir/bin/dssadmin build-base-image --type container-exec --mode use --with-py39 --without-py37 --without-r --source-image dataiku-dss-container-exec-base:dss-13.1.4-almalinux8-r4-py3.9
+/data/dataiku/dss_data/bin/dssadmin build-base-image --type container-exec --without-r --with-py310 --with-py311 --with-py312
 
-# ./bin/dssadmin build-base-image --type spark --without-r --with-py36 --with-py39 --with-py311  --with-py312   --with-py313  --without-cuda
-/data/data_dir/bin/dssadmin build-base-image --type spark --mode use --with-py311  --with-py312 --without-py37 --without-r --source-image dataiku-dss-spark-exec-base:dss-13.1.4-almalinux8-r4-py3.9
+/data/dataiku/dss_data/bin/dssadmin build-base-image --type api-deployer --without-r --with-py311 --copy-to-buildenv /home/dss/oracle-instantclient-basic-23.8.0.25.04-1.el9.x86_64.rpm oracle-instantclient-basic-23.8.0.25.04-1.el9.x86_64.rpm --dockerfile-prepend /home/dss/docker-pretend.txt
+/data/dataiku/dss_data/bin/dssadmin build-base-image --type api-deployer --without-r --with-py311
 
-# ./bin/dssadmin build-base-image --type cde --without-r --with-py36 --with-py39 --with-py311  --with-py312   --with-py313  --without-cuda
-/data/data_dir/bin/dssadmin build-base-image --type cde --mode use --with-py39 --with-py311  --with-py312  --without-py37 --without-r --source-image dataiku-dss-cde-base:dss-13.1.4-almalinux8-r4-py3.9
+/data/dataiku/dss_data/bin/dssadmin build-base-image --type container-exec --mode use
+/data/dataiku/dss_data/bin/dssadmin build-base-image --type spark --mode use
+/data/dataiku/dss_data/bin/dssadmin build-base-image --type cde --mode use
+/data/dataiku/dss_data/bin/dssadmin build-base-image --type api-deployer --mode use
 
-# ./bin/dssadmin build-base-image --type api-deployer --without-r --with-py36 --with-py39 --with-py311  --with-py312   --with-py313  --without-cuda
-/data/data_dir/bin/dssadmin build-base-image --type api-deployer --mode use --with-py39 --with-py311  --with-py312  --without-py37 --without-r --source-image dataiku-dss-apideployer-base:dss-13.1.4-almalinux8-r4-py3.9
+/data/dataiku/dss_data/bin/dssadmin build-base-image --type api-deployer --without-r --with-py311 --copy-to-buildenv /home/dss/oracle-instantclient-basic-23.8.0.25.04-1.el9.x86_64.rpm oracle-instantclient-basic-23.8.0.25.04-1.el9.x86_64.rpm --dockerfile-prepend /home/dss/docker-pretend.txt --target-registry harbor.mohre.gov.ae/lmis_dataiku
+
+/data/dataiku/dss_data/bin/dssadmin build-base-image --type container-exec --without-r --with-py311 --copy-to-buildenv /home/dss/geos-devel-3.13.1-1.el9.x86_64.rpm geos-devel-3.13.1-1.el9.x86_64.rpm --dockerfile-prepend /home/dss/docker-pretend.txt.1
+/data/dataiku/dss_data/bin/dssadmin build-base-image --type container-exec --without-r --with-py311 --copy-to-buildenv /etc/crypto-policies/back-ends/java.config java.config --dockerfile-prepend /home/dss/docker-pretend.txt.sql_server_issue
+/data/dataiku/dss_data/bin/dssadmin build-base-image --type container-exec --mode build-push --target-registry harbor.mohre.gov.ae/lmis_dataiku --without-r --with-py311 --copy-to-buildenv /etc/crypto-policies/back-ends/java.config java.config --dockerfile-prepend /home/dss/docker-pretend.txt.sql_server_issue

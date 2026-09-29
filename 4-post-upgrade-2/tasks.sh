@@ -1,4 +1,4 @@
-DATA_DIR = /data/data_dir
+DATA_DIR = /data/dataiku/dss_data
 DSS_VERSION=15.0.2
 
 # Start DSS
