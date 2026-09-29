@@ -1,13 +1,13 @@
-# Housing Bank DSS Upgrade Assistant
+# MOHRE DSS Upgrade Assistant
 
-Step-by-step runbook for upgrading the Housing Bank Dataiku DSS environment to
-version `15.0.1`.
+Step-by-step runbook for upgrading the MOHRE Dataiku DSS environment to
+version `15.0.2`.
 
 The repository is split into four phases:
 
 1. [`1-pre-upgrade/tasks.sh`](1-pre-upgrade/tasks.sh): download release artifacts,
 	 stop DSS, and create backups.
-2. [`2-upgrade/tasks.sh`](2-upgrade/tasks.sh): install DSS `15.0.1` into the
+2. [`2-upgrade/tasks.sh`](2-upgrade/tasks.sh): install DSS `15.0.2` into the
 	 existing data directory.
 3. [`3-post-upgrade-1/tasks.sh`](3-post-upgrade-1/tasks.sh): reinstall R,
 	 graphics export, Hadoop/Spark integrations, and rebuild base images.
@@ -29,7 +29,7 @@ window.
 
 ## Before you start
 
-1. Confirm that DSS `15.0.1` is compatible with the current DSS version,
+1. Confirm that DSS `15.0.2` is compatible with the current DSS version,
 	 operating system, Java, Python, R, PostgreSQL, Hadoop, Spark, Kubernetes,
 	 and container runtime configuration.
 2. Confirm that no jobs, scenarios, deployments, or users are active.
@@ -46,7 +46,7 @@ window.
 Run as an administrator, switching to `dss` for DSS-owned files:
 
 ```bash
-export DSS_VERSION=15.0.1
+export DSS_VERSION=15.0.2
 export DATA_DIR=/data/data_dir
 export BACKUP_DIR=/data/data_dir_backup_$(date +%F)
 
@@ -66,10 +66,10 @@ Verify that the DSS backup directory and PostgreSQL dump exist before
 continuing. Keep the release archives and backups until the upgrade has been
 accepted.
 
-### 2. Install DSS `15.0.1`
+### 2. Install DSS `15.0.2`
 
 ```bash
-export DSS_VERSION=15.0.1
+export DSS_VERSION=15.0.2
 export DATA_DIR=/data/data_dir
 
 sudo -iu dss tar xzf "/data/dataiku-dss-${DSS_VERSION}.tar.gz" -C /data
@@ -93,7 +93,7 @@ Run after installation, before starting DSS:
 
 ```bash
 export DATA_DIR=/data/data_dir
-export DSS_VERSION=15.0.1
+export DSS_VERSION=15.0.2
 
 sudo -iu dss "${DATA_DIR}/bin/dssadmin" install-R-integration
 sudo -iu dss "${DATA_DIR}/bin/dssadmin" install-graphics-export

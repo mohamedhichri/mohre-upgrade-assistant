@@ -1,6 +1,6 @@
 # download the new version of DSS and the required libraries
-DSS_VERSION=15.0.1
-sudo su dataiku_user
+DSS_VERSION=15.0.2
+sudo su dss
 
 cd /data
 
@@ -11,7 +11,7 @@ wget https://downloads.dataiku.com/public/studio/{DSS_VERSION}/dataiku-dss-hadoo
 wget https://downloads.dataiku.com/public/studio/{DSS_VERSION}/dataiku-dss-spark-standalone-{DSS_VERSION}-4.1.2-generic-hadoop3.tar.gz
 
 # stop dataiku
-sudo su dataiku_user
+sudo su dss
 
 cd /data/data_dir
 
