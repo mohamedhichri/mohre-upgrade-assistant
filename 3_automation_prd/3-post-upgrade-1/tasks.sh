@@ -18,4 +18,7 @@ sudo su -
 # check config /etc/dataiku-security/INSTALL_ID/security-config.ini
 
 ## Rebuild base images
-# Base-image commands are specific to the design (prd) reference node; not applicable to this node.
+Command line: /data/dataiku/dss_data/bin/dssadmin build-base-image --type container-exec --mode use
+Command line: /data/dataiku/dss_data/bin/dssadmin build-base-image --type spark --mode use
+Command line: /data/dataiku/dss_data/bin/dssadmin build-base-image --type cde --mode use
+Command line: /data/dataiku/dss_data/bin/dssadmin build-base-image --type api-deployer --mode use

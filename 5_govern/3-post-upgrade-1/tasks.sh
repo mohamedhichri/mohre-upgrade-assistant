@@ -23,4 +23,4 @@ DSS_VERSION=15.0.2
 # check config /etc/dataiku-security/INSTALL_ID/security-config.ini
 
 ## Rebuild base images
-# Base-image commands are specific to the design (prd) reference node; not applicable to this node.
+# not applicable to this node.
